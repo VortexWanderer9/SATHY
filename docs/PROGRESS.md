@@ -1,12 +1,24 @@
 # Progress Tracking
 
-Status: Complete (Part 2)
+Status: Complete (Part 3)
 
 ## Active Part
 
-_(Part 2 complete; awaiting Part 3 start)_
+_(Part 3 complete; awaiting Part 4 start)_
 
 ## Completed Parts
+
+### Part 3 — Communities & Activities Pages (Static) (completed 2026-08-29)
+
+- [x] 1. lib/mock/communities.js — 8 mock community objects with id, name, 1–2 sentence description, 2–4 tags, location, memberCount, imageUrl: null
+- [x] 2. app/communities/page.js — Container + heading + responsive grid (cols 1/sm:2/lg:3), each Card links to /communities/[id] via Next Link, shows name/location/memberCount/tags Badges
+- [x] 3. app/communities/[id]/page.js — async server component, params.id lookup, notFound() on miss, full detail layout (flex-col → lg:flex-row), "Join Community" Button (no onClick)
+- [x] 4. lib/mock/activities.js — 8 mock activity objects with id, title, 1–2 sentence description, 2–4 tags, location, date ("Sat, Sep 20 · 4:00 PM" style), attendeesCount, imageUrl: null
+- [x] 5. app/activities/page.js — same pattern: Container/heading/grid, Cards show date/title/location/attendeesCount/tags, links to /activities/[id]
+- [x] 6. app/activities/[id]/page.js — same pattern as community detail, notFound() on miss, "RSVP" Button (no onClick)
+- [x] 7. config/site.js — navLinks already contains { label: "Communities", href: "/communities" } and { label: "Activities", href: "/activities" } from Part 1
+- [x] 8. Responsive check — mobile (562px → 1 col 515px) + desktop (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 classes confirmed on both list pages); detail pages use flex-col → lg:flex-row wrappers confirmed
+- [x] 9. Final npm run build + npm run lint (both clean exit 0); invalid id routes /communities/does-not-exist and /activities/does-not-exist correctly trigger notFound() and render the 404 page; VS Code diagnostics empty
 
 ### Part 2 — Discover Page (Static) (completed 2026-08-29)
 
@@ -36,4 +48,4 @@ _(Part 2 complete; awaiting Part 3 start)_
 
 ## Continue from here
 
-_(Start Part 3 — first check ROADMAP.md and re-read this file)_
+_(Start Part 4 — first check ROADMAP.md and re-read this file)_
