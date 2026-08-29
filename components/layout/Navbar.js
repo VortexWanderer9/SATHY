@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
 import Container from "@/components/ui/Container";
+import Button from "@/components/ui/Button";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -35,12 +36,13 @@ export default function Navbar() {
                 ))}
               </ul>
 
-              <button
-                type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 md:hidden"
+              <Button
+                variant="ghost"
+                size="md"
                 onClick={() => setOpen((v) => !v)}
                 aria-expanded={open}
                 aria-label="Toggle navigation"
+                className="w-10 px-0 md:hidden"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +68,7 @@ export default function Navbar() {
                     </>
                   )}
                 </svg>
-              </button>
+              </Button>
             </>
           )}
         </nav>
