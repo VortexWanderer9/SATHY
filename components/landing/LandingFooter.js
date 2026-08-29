@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Container from "@/components/ui/Container";
 
 const FOOTER_LINKS = [
@@ -21,12 +22,12 @@ export default function LandingFooter() {
       <Container max="6xl" className="py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
-            <a
-              href="#"
+            <Link
+              href="/"
               className="font-[family-name:var(--font-display)] text-xl font-bold tracking-tight text-[#1B1F23]"
             >
               SATHY
-            </a>
+            </Link>
             <p className="mt-3 max-w-xs text-sm text-[#6B6660]">
               Find your people, not just your feed.
             </p>
@@ -40,12 +41,12 @@ export default function LandingFooter() {
               <ul className="mt-4 space-y-2.5">
                 {column.links.map((link) => (
                   <li key={link}>
-                    <a
+                    <Link
                       href="#"
                       className="text-sm text-[#4A4540] transition-colors hover:text-[#1B1F23]"
                     >
                       {link}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

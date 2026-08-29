@@ -1,10 +1,26 @@
 # Progress Tracking
 
-Status: Complete (Part 3)
+Status: Complete (Part 3 + UI Library Audit)
 
 ## Active Part
 
-_(Part 3 complete; awaiting Part 4 start)_
+_(Parts 1–3 complete + UI component library verified as drop-in replacement for main project; awaiting Part 4 start)_
+
+## UI Component Library — Final Inventory (components/ui/)
+
+Ready to drop into the main SATHY project (replaces `components/ui/` entirely).
+All components are generic, landing-page-agnostic, and dependency-free (shared only `@/lib/utils` `cn()` helper).
+
+| File | Component | Purpose | Key API |
+|---|---|---|---|
+| [Button.js](file:///home/tyrell-wellick/Documents/TEMP/sathy-foundation/sathy/components/ui/Button.js) | `Button` | Accessible clickable action with variants, sizes, shapes and `asChild` for composability (wraps `<Link>` etc.) | `variant`: primary / secondary / ghost / outline · `size`: sm / md / lg · `shape`: md / pill · `asChild`, `disabled`, `type`, `className`, rest props |
+| [Card.js](file:///home/tyrell-wellick/Documents/TEMP/sathy-foundation/sathy/components/ui/Card.js) | `Card` | Generic bordered container with rounded corners, padding and soft shadow; used for profile cards, feature tiles, results, detail panels | `className`, children, rest props |
+| [Badge.js](file:///home/tyrell-wellick/Documents/TEMP/sathy-foundation/sathy/components/ui/Badge.js) | `Badge` | Small pill-shaped status/tag indicator with 8 semantic color variants; used for categories, type filters, tags, locations, membership states | `variant`: default / primary / success / warning / danger / info / purple / pink · `className`, children, rest props |
+| [Input.js](file:///home/tyrell-wellick/Documents/TEMP/sathy-foundation/sathy/components/ui/Input.js) | `Input` | Labeled form input with auto-generated `id` (React `useId`), disabled state, focus ring, ARIA label linkage | `label`, `type` (text/search/email/password/etc.), `disabled`, `className`, rest spread for native `<input>` props (value, onChange, placeholder…) |
+| [Avatar.js](file:///home/tyrell-wellick/Documents/TEMP/sathy-foundation/sathy/components/ui/Avatar.js) | `Avatar` | Rounded user image with graceful initials fallback when `src` is null/missing; 4 sizes, white ring, auto-initial generation from name | `src`, `alt`, `name` (for initials) · `size`: sm / md / lg / xl · `className`, rest props |
+| [Container.js](file:///home/tyrell-wellick/Documents/TEMP/sathy-foundation/sathy/components/ui/Container.js) | `Container` | Page-width wrapper with responsive horizontal padding and centered max-width; replaces ad-hoc `mx-auto max-w-* px-4` patterns | `max`: 4xl / 5xl / 6xl / 7xl / full · `className`, children, rest props |
+
+**No duplicate components exist in the repo.** `components/layout/Navbar.js` + `components/layout/Footer.js` are app-shell (Discover/Communities/Activities routes) and `components/landing/Landing*.js` are landing-marketing components — different concerns, not duplicates of `ui/`.
 
 ## Completed Parts
 
