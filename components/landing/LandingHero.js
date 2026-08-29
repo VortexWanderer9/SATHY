@@ -44,7 +44,7 @@ export default function LandingHero() {
               size="lg"
               className={cn("px-7 py-3.5", BRAND_PRIMARY)}
             >
-              <Link href="#">Get Started</Link>
+              <Link href="/signup">Get Started</Link>
             </Button>
             <Button
               asChild
@@ -53,7 +53,7 @@ export default function LandingHero() {
               size="lg"
               className={cn("px-7 py-3.5", BRAND_BORDER)}
             >
-              <Link href="#">Log In</Link>
+              <a href="#features">Learn More</a>
             </Button>
           </div>
 

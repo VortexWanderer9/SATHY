@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
@@ -21,6 +22,15 @@ export default async function CommunityDetailPage({ params }) {
 
   return (
     <Container className="py-12">
+      <div className="mb-6">
+        <Link
+          href="/communities"
+          className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900 hover:underline underline-offset-4"
+        >
+          ← Back to Communities
+        </Link>
+      </div>
+
       <Card className="gap-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
@@ -48,7 +58,12 @@ export default async function CommunityDetailPage({ params }) {
           </div>
 
           <div className="shrink-0 lg:ml-8">
-            <Button size="lg">Join Community</Button>
+            <div className="flex flex-col items-start gap-2">
+              <Button size="lg" disabled>
+                Join Community
+              </Button>
+              <p className="text-xs text-gray-500">Coming soon</p>
+            </div>
           </div>
         </div>
       </Card>

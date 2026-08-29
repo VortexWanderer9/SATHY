@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import Container from "@/components/ui/Container";
 import Input from "@/components/ui/Input";
@@ -43,8 +44,8 @@ export default function DiscoverPage() {
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Discover</h1>
         <p className="mt-2 text-gray-600">
-          Find people, communities, and activities matched to your interests
-          and location.
+          Find people, communities, and activities matched to your interests and
+          location.
         </p>
       </header>
 
@@ -100,39 +101,56 @@ export default function DiscoverPage() {
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           aria-label="Discover results"
         >
-          {filtered.map((item) => (
-            <Card key={item.id} className="flex h-full flex-col gap-4">
-              <div className="flex items-start gap-4">
-                <Avatar
-                  src={item.avatarUrl || undefined}
-                  name={item.name}
-                  alt={item.name}
-                  size="lg"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="info" className="capitalize">
-                      {item.type}
-                    </Badge>
+          {filtered.map((item) => {
+            const detailHref =
+              item.type === "community"
+                ? `/communities/nepal-trail-runners`
+                : item.type === "activity"
+                  ? `/activities/weekend-sunrise-hike-shivapuri`
+                  : `/make-friends`;
+            return (
+              <Card key={item.id} className="flex h-full flex-col gap-4">
+                <div className="flex items-start gap-4">
+                  <Avatar
+                    src={item.avatarUrl || undefined}
+                    name={item.name}
+                    alt={item.name}
+                    size="lg"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="info" className="capitalize">
+                        {item.type}
+                      </Badge>
+                    </div>
+                    <h2 className="mt-1 text-base font-semibold text-gray-900">
+                      {item.name}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-gray-500">
+                      {item.location}
+                    </p>
                   </div>
-                  <h2 className="mt-1 text-base font-semibold text-gray-900">
-                    {item.name}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-gray-500">
-                    {item.location}
-                  </p>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {item.tags.map((tag, idx) => (
-                  <Badge key={tag} variant={pickTagVariant(idx)}>
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </Card>
-          ))}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {item.tags.map((tag, idx) => (
+                    <Badge key={tag} variant={pickTagVariant(idx)}>
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="mt-auto flex justify-end pt-2">
+                  <Link
+                    href={detailHref}
+                    className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
+                  >
+                    View details →
+                  </Link>
+                </div>
+              </Card>
+            );
+          })}
         </section>
       )}
     </Container>

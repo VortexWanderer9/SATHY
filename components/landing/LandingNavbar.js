@@ -2,41 +2,36 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { siteConfig } from "@/config/site";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import Avatar from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
-
-const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "How it Works", href: "#how-it-works" },
-  { label: "Community", href: "#community" },
-];
 
 const BRAND_PRIMARY =
   "bg-[#FF5A36] hover:bg-[#E64A28] text-white focus-visible:outline-[#FF5A36]";
-const BRAND_GHOST =
-  "text-[#1B1F23] hover:bg-[#EDE7DF]/60 focus-visible:outline-[#EDE7DF]";
 const BRAND_BORDER =
   "border-[#EDE7DF] bg-white text-[#1B1F23] hover:bg-[#EDE7DF]/60 focus-visible:outline-[#EDE7DF]";
 
 export default function LandingNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#EDE7DF] bg-[#FAF8F5]/90 backdrop-blur">
       <Container max="6xl" className="py-4">
         <nav className="flex items-center justify-between">
           <Link
-            href="#"
+            href="/"
             className="font-[family-name:var(--font-display)] text-xl font-bold tracking-tight text-[#1B1F23]"
+            onClick={() => setIsMenuOpen(false)}
           >
-            SATHY
+            {siteConfig.name}
           </Link>
 
           <ul className="hidden items-center gap-8 md:flex">
-            {NAV_LINKS.map((link) => (
-              <li key={link.label}>
+            {siteConfig.navLinks.map((link) => (
+              <li key={link.href}>
                 <Link
                   href={link.href}
                   className="text-sm font-medium text-[#1B1F23]/70 transition-colors hover:text-[#1B1F23]"
@@ -48,22 +43,36 @@ export default function LandingNavbar() {
           </ul>
 
           <div className="hidden items-center gap-3 md:flex">
-            <Button
-              asChild
-              variant="ghost"
-              shape="pill"
-              className={BRAND_GHOST}
-            >
-              <Link href="#">Log In</Link>
-            </Button>
-            <Button
-              asChild
-              variant="primary"
-              shape="pill"
-              className={BRAND_PRIMARY}
-            >
-              <Link href="#">Get Started</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Link href="/profile" aria-label="Profile">
+                <Avatar
+                  name="Sathy User"
+                  size="sm"
+                  className="cursor-pointer ring-2 ring-[#EDE7DF]"
+                />
+              </Link>
+            ) : (
+              <>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="md"
+                  shape="pill"
+                  className={BRAND_BORDER}
+                >
+                  <Link href="/login">Log In</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="primary"
+                  size="md"
+                  shape="pill"
+                  className={BRAND_PRIMARY}
+                >
+                  <Link href="/signup">Sign Up</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           <Button
@@ -107,46 +116,56 @@ export default function LandingNavbar() {
         <div className="border-t border-[#EDE7DF] bg-[#FAF8F5] md:hidden">
           <Container max="6xl" className="pb-6 pt-2">
             <ul className="flex flex-col gap-1">
-              {NAV_LINKS.map((link) => (
-                <li key={link.label}>
+              {siteConfig.navLinks.map((link) => (
+                <li key={link.href}>
                   <Link
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
                     className="block rounded-lg px-3 py-2.5 text-sm font-medium text-[#1B1F23]/80 hover:bg-[#EDE7DF]/60"
                   >
-                    <Badge
-                      variant="default"
-                      className={cn(
-                        "border-0 bg-transparent p-0 text-[13px] font-medium text-[#1B1F23]/80 hover:text-[#1B1F23]",
-                      )}
-                    >
-                      {link.label}
-                    </Badge>
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
             <div className="mt-4 flex flex-col gap-3">
-              <Button
-                asChild
-                variant="outline"
-                shape="pill"
-                className={cn(BRAND_BORDER, "justify-center")}
-              >
-                <Link href="#" onClick={() => setIsMenuOpen(false)}>
-                  Log In
+              {isLoggedIn ? (
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#1B1F23]/80 hover:bg-[#EDE7DF]/60"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Avatar
+                    name="Sathy User"
+                    size="sm"
+                    className="ring-2 ring-[#EDE7DF]"
+                  />
+                  <span>Profile</span>
                 </Link>
-              </Button>
-              <Button
-                asChild
-                variant="primary"
-                shape="pill"
-                className={cn(BRAND_PRIMARY, "justify-center")}
-              >
-                <Link href="#" onClick={() => setIsMenuOpen(false)}>
-                  Get Started
-                </Link>
-              </Button>
+              ) : (
+                <>
+                  <Button
+                    asChild
+                    variant="outline"
+                    shape="pill"
+                    className={cn(BRAND_BORDER, "justify-center")}
+                  >
+                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                      Log In
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="primary"
+                    shape="pill"
+                    className={cn(BRAND_PRIMARY, "justify-center")}
+                  >
+                    <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+                      Sign Up
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           </Container>
         </div>

@@ -27,7 +27,7 @@ export default function LandingCTA() {
             size="lg"
             className={cn("px-8 py-3.5", BRAND_PRIMARY)}
           >
-            <Link href="#">Get Started</Link>
+            <Link href="/signup">Get Started</Link>
           </Button>
         </div>
       </Container>

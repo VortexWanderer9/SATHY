@@ -26,33 +26,36 @@ export default function CommunitiesPage() {
         aria-label="Communities"
       >
         {communities.map((community) => (
-          <Link
-            key={community.id}
-            href={`/communities/${community.id}`}
-            className="h-full transition-transform hover:-translate-y-0.5"
-          >
-            <Card className="flex h-full flex-col gap-4">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-base font-semibold text-gray-900">
-                  {community.name}
-                </h2>
-                <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-                  {community.location}
-                </p>
-                <p className="mt-2 text-sm font-medium text-gray-700">
-                  {community.memberCount.toLocaleString()} members
-                </p>
-              </div>
+          <Card key={community.id} className="flex h-full flex-col gap-4">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold text-gray-900">
+                {community.name}
+              </h2>
+              <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+                {community.location}
+              </p>
+              <p className="mt-2 text-sm font-medium text-gray-700">
+                {community.memberCount.toLocaleString()} members
+              </p>
+            </div>
 
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {community.tags.map((tag, idx) => (
-                  <Badge key={tag} variant={pickTagVariant(idx)}>
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </Card>
-          </Link>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {community.tags.map((tag, idx) => (
+                <Badge key={tag} variant={pickTagVariant(idx)}>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+
+            <div className="mt-auto flex justify-end pt-2">
+              <Link
+                href={`/communities/${community.id}`}
+                className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
+              >
+                View details →
+              </Link>
+            </div>
+          </Card>
         ))}
       </section>
     </Container>
