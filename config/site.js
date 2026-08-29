@@ -10,8 +10,8 @@ export const siteConfig = {
   description:
     "SATHY is a simple social platform for discovering friends, communities, and activities based on shared interests and location.",
   navLinks: [
-    // { label: "Discover", href: "/discover" },
-    // { label: "Communities", href: "/communities" },
-    // { label: "Activities", href: "/activities" },
+    { label: "Discover", href: "/discover" },
+    { label: "Communities", href: "/communities" },
+    { label: "Activities", href: "/activities" },
   ],
 };
