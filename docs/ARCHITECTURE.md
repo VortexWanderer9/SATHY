@@ -1,103 +1,85 @@
 # Architecture
 
-This document describes how SATHY is put together today, and the shape
-it's expected to grow into. It reflects the current foundation only —
-nothing here describes code that has been written ahead of time.
+SATHY is a Next.js App Router frontend with a static data layer and a shared UI system. The current version is product-facing and visually complete for the frontend baseline, but it is still mock-driven and does not include a real backend, database, or authenticated user state.
 
-## High-level approach
-
-SATHY is a Next.js App Router application, currently **frontend-only**.
-There is no backend, database, or authentication yet. The app renders
-static/client content and will grow backend capabilities feature by
-feature.
+## High-level structure
 
 ```
-┌─────────────────────────────┐
-│           app/              │  Routes (URL structure) + layouts
-├─────────────────────────────┤
-│        components/          │  Presentational UI, split by scope:
-│   layout/  ui/  <feature>/  │   layout = shell, ui = generic, feature = specific
-├─────────────────────────────┤
-│      hooks/   context/      │  Shared stateful logic & cross-cutting state
-├─────────────────────────────┤
-│           lib/              │  Framework-agnostic helper functions
-├─────────────────────────────┤
-│          config/            │  Static site configuration (non-secret)
-└─────────────────────────────┘
+app/                Routes and route-group layouts
+└── (landing)       Marketing page shell
+└── (app)           Main product shell
+
+components/         Presentational and shared UI code
+├── landing/        Marketing-page-only sections
+├── layout/         Navbar and Footer shell
+└── ui/             Generic UI primitives reused across routes
+
+config/             Static site config and nav metadata
+lib/                Utility functions and mock data
+context/            Placeholder area for future shared app state
+hooks/              Placeholder area for future custom hooks
+public/             Static images/icons
 ```
 
-Each layer only depends on the layers below it. `app/` can import from
-anywhere; `lib/` should never import from `components/` or `app/`.
+## Routing model
 
-## Routing (`app/`)
+The app uses route groups to separate the public landing experience from the authenticated-style product experience.
 
-Next.js App Router: each folder under `app/` maps to a URL segment, and
-`page.js` is the content rendered at that route. `layout.js` wraps every
-route in the shared Navbar/Footer shell.
+### Public/marketing routes
 
-Planned route groups as features are built (none exist yet):
+- `/` — landing page
 
-| Route            | Purpose                                   |
-|-------------------|-------------------------------------------|
-| `/`               | Landing / home (exists today)             |
-| `/discover`       | Browse people, communities, activities    |
-| `/communities`    | Community listing & detail pages          |
-| `/activities`     | Activity listing & detail pages           |
-| `/profile/[id]`   | User profile pages                        |
-| `/messages`       | Messaging                                 |
-| `/login`, `/signup` | Authentication                          |
+### Product routes
 
-When a feature is built, its routes get their own folder under `app/`,
-and, if it needs several components, a matching folder under
-`components/<feature>/`.
+- `/login`
+- `/signup`
+- `/discover`
+- `/communities`
+- `/communities/[id]`
+- `/activities`
+- `/activities/[id]`
+- `/profile`
+- `/settings`
+- `/make-friends`
+- `/messages`
 
-## Components (`components/`)
+The route group layouts are not standalone pages; they are layout wrappers enabling consistent shell behavior across the app.
 
-Split by scope, not by feature-readiness:
+## UI system
 
-- **`layout/`** — the app shell that appears on every page (Navbar,
-  Footer). Rarely changes once set.
-- **`ui/`** — generic, feature-agnostic primitives (Button, Input, Card).
-  Reusable in any project, not specific to SATHY.
-- **`<feature>/`** (future) — components specific to one feature, e.g.
-  `components/communities/CommunityCard.js`. Created when that feature
-  is built, not before.
+The shared design system currently lives in `components/ui/` and is intentionally generic:
 
-## Shared logic (`hooks/`, `context/`, `lib/`)
+- `Button` — shared action styling and sizing
+- `Card` — consistent page/card container pattern
+- `Badge` — tags and status labels
+- `Input` — form field wrapper with form semantics
+- `Avatar` — user image or initials
+- `Container` — width and spacing wrapper
 
-- **`hooks/`** — reusable stateful logic shared by multiple components.
-- **`context/`** — React Context for state genuinely needed across many
-  unrelated components (e.g. a future logged-in user). Avoided until it's
-  actually needed, to keep state simple and local by default.
-- **`lib/`** — plain JS helpers with no React/Next dependency. Safe to
-  unit test in isolation. Once a backend exists, API client helpers and
-  data-fetching functions will live here too.
+The app uses these primitives rather than embedding ad hoc styled markup in each page.
 
-## Configuration (`config/`)
+## Data flow
 
-Static, non-secret configuration such as the site name, description, and
-navigation structure, kept out of components so it's edited in one place.
+The product pages are driven by mock data under `lib/mock/`:
 
-Secrets and environment-specific values go through `.env.local`
-(see `.env.example`), never through `config/`.
+- `activities.js`
+- `communities.js`
+- `discover.js`
+
+This keeps the UI stable while the product is still front-end only. Route detail pages resolve the requested item by id from those arrays.
+
+## State and auth
+
+There is currently no `UserContext` or authenticated session flow in the codebase. Local component state is used for small forms and search/filter interactions; global user state is intentionally not introduced until there is a real app requirement for it.
+
+## Configuration
+
+`config/site.js` is the single source of truth for shared navigation and footer metadata. This keeps top-level links consistent across the Navbar and Footer without repeating hardcoded values in multiple components.
 
 ## Styling
 
-Tailwind CSS v4, configured via `postcss.config.mjs` and imported once in
-`app/globals.css`. No CSS-in-JS or component-scoped stylesheets — utility
-classes directly in JSX, which keeps styling colocated with markup.
+Tailwind utilities are used directly in JSX, and the UI primitives provide the consistent baseline for spacing, border radius, shadows, and typography. The styling system is shared rather than split into page-specific CSS conventions.
 
-## State management
+## Current status
 
-Plain React state (`useState`, `useReducer`) for now. No global state
-library (Redux/Zustand/etc.) has been introduced, and shouldn't be until
-there's a concrete cross-cutting state need that Context can't handle
-cleanly.
-
-## What's deliberately not here yet
-
-Authentication, a database, API routes, and all product features
-(profiles, communities, activities, posts, messaging, recommendations)
-are intentionally absent. See `ROADMAP.md` for the planned build order.
-When each is added, this file should be updated to describe how it fits
-into the architecture above.
+The frontend baseline is in place and stable. The next product phase should extend the current structure and keep route names, UI primitives, and documentation aligned as the app grows.

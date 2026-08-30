@@ -1,9 +1,6 @@
 /**
  * Central place for site-wide, non-secret configuration.
  * Import this instead of hardcoding strings like the app name in components.
- *
- * As real routes are built (Discover, Communities, Activities...),
- * add them to `navLinks` here rather than hardcoding links in Navbar.js.
  */
 export const siteConfig = {
   name: "SATHY",
@@ -15,12 +12,14 @@ export const siteConfig = {
     { label: "Communities", href: "/communities" },
     { label: "Activities", href: "/activities" },
     { label: "Make Friends", href: "/make-friends" },
+    { label: "Messages", href: "/messages" },
   ],
   footerLinks: {
     product: [
       { label: "Discover", href: "/discover", comingSoon: false },
       { label: "Communities", href: "/communities", comingSoon: false },
       { label: "Activities", href: "/activities", comingSoon: false },
+      { label: "Messages", href: "/messages", comingSoon: false },
     ],
     company: [{ label: "About", href: "#", comingSoon: true }],
     legal: [

@@ -6,6 +6,7 @@ import Container from "@/components/ui/Container";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import Avatar from "@/components/ui/Avatar";
 import { discoverItems } from "@/lib/mock/discover";
 import { cn } from "@/lib/utils";
@@ -66,24 +67,20 @@ export default function DiscoverPage() {
           {TYPE_FILTERS.map((f) => {
             const active = f.key === activeType;
             return (
-              <button
+              <Button
                 key={f.key}
                 type="button"
-                onClick={() => setActiveType(f.key)}
+                variant={active ? "primary" : "secondary"}
+                size="sm"
+                className={cn(
+                  "rounded-full",
+                  !active && "border border-gray-200 bg-white text-gray-700",
+                )}
                 aria-pressed={active}
+                onClick={() => setActiveType(f.key)}
               >
-                <Badge
-                  variant={active ? "primary" : "default"}
-                  className={cn(
-                    "cursor-pointer transition-colors",
-                    active
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "hover:bg-gray-200",
-                  )}
-                >
-                  {f.label}
-                </Badge>
-              </button>
+                {f.label}
+              </Button>
             );
           })}
         </div>
