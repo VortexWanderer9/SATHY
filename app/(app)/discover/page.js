@@ -100,10 +100,10 @@ export default function DiscoverPage() {
         >
           {filtered.map((item) => {
             const detailHref =
-              item.type === "community"
-                ? `/communities/nepal-trail-runners`
-                : item.type === "activity"
-                  ? `/activities/weekend-sunrise-hike-shivapuri`
+              item.type === "community" && item.detailId
+                ? `/communities/${item.detailId}`
+                : item.type === "activity" && item.detailId
+                  ? `/activities/${item.detailId}`
                   : `/make-friends`;
             return (
               <Card key={item.id} className="flex h-full flex-col gap-4">
