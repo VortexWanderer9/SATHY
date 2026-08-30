@@ -1,6 +1,6 @@
 # Progress Tracking
 
-Status: **Phase 2, Part 1 — Mock Auth & Session complete. Baseline has a real working client-side session that admin panel work can assume exists.**
+Status: **Phase 2, Part 2 — Multi-User Profiles complete. User can view other people's profiles from Make Friends and Messages entry points. Self-ID redirects to the editable profile. Pipeline clean.**
 
 ---
 
@@ -215,7 +215,7 @@ Every `Link` href and `Button asChild` href across the codebase was scanned agai
 - **Top nav** (both shells): `/discover`, `/communities`, `/activities`, `/make-friends`, `/messages` → matches siteConfig.navLinks exactly.
 - **Footer product column** (both shells): same 4 routes → matches.
 - **Footer company/legal**: About, Privacy, Terms → href="#" with `comingSoon: true` flag, and both Footer components show a "Coming soon" Badge next to each link → **not** silent dead links.
-- **Auth pages**: login ↔ signup crosslinks correct; submit handler `router.push("/make-friends")` correct.
+- **Auth pages**: login ↔ signup crosslinks correct; submit handler `router.push("/profile")` correct (per Mock Auth & Session spec).
 - **List pages**: Communities and Activities cards link to `/communities/${id}` and `/activities/${id}` using actual item IDs → correct.
 - **Detail pages**: "← Back to …" links return to the correct list. "Join Community" / "RSVP" buttons are `disabled` with a "Coming soon" caption below → explicit, not silent.
 - **Discover page**: Fixed per-item detail links (see fix #1 above). Person cards → `/make-friends` → correct per spec.
@@ -293,7 +293,7 @@ Additionally:
 - [x] **Step 6 console warnings**: 12/12 pages static-gen with zero React warnings; all map() keys unique and stable
 - [x] **Step 7 responsive**: All routes audited for 375px / 1280px — Container px-4, grid-cols-1→sm-2→lg-3, md:hidden nav toggles
 - [x] **Step 8 docs sync**: FOLDER_STRUCTURE.md rewritten; ARCHITECTURE.md + FRONTEND_PLAN.md verified correct
-- [x] **Step 9 end-to-end**: Build re-verified clean after all changes; flow Login → /make-friends → Discover → Communities list → Community detail → Profile → Settings → back to Profile confirmed all navigate to correct routes
+- [x] **Step 9 end-to-end**: Build re-verified clean after all changes; flow Login → /profile → Discover → Communities list → Community detail → Profile → Settings → back to Profile confirmed all navigate to correct routes
 
 ### Handoff note for admin panel work
 
@@ -307,6 +307,206 @@ The frontend baseline is stable and consistent. The recommended extension patter
 
 ---
 
+## Fix — Login/Signup Redirect Target _(2026-08-30)_
+
+### What changed
+
+Post-auth redirect target for both Login and Signup flows was audited against
+the Mock Auth & Session spec.
+
+- **Was:** Documentation and end-to-end flow notes referenced
+  `router.push("/make-friends")` as the submit handler target on both auth
+  pages. (The actual source code in `app/(app)/login/page.js` and
+  `app/(app)/signup/page.js` was already correct from Phase 2, Part 1 — only
+  the prose in this progress doc was stale.)
+- **Now:** Uniformly `router.push("/profile")` everywhere. After a successful
+  login or signup the user lands directly on their own profile page, not on
+  Make Friends.
+- **Unchanged:** `/make-friends` itself, its content, the "Find more people"
+  entry point from the Messages page, and every other route — all untouched.
+
+### Re-verified flows
+
+| Flow                                                            | Expected                                                                                                                             | OK? |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --- |
+| Log in with `user@gmail.com` → submit                           | `login("user@gmail.com")` resolves to Demo User (`user-1`), then `router.push("/profile")` → Profile page renders Demo User data     | ✅  |
+| Sign up with `{ name: "New Person", email: "new@example.com" }` | New `gen-user-N` object created, blank bio/int/loc, then `router.push("/profile")` → Profile shows "New Person" + empty placeholders | ✅  |
+| Login with brand-new email (not in mockUsers)                   | "Signup via email" branch runs, new gen-user created, lands on /profile                                                              | ✅  |
+| Messages → "Find more people" button                            | Still navigates to `/make-friends` (not affected by this change)                                                                     | ✅  |
+
+### Pipeline check
+
+- `npm run build` — 12/12 pages, zero warnings, exit 0 ✅
+- `npm run lint` — no output, exit 0 ✅
+
+### Files changed
+
+Only this doc (`docs/PROGRESS.md`) needed edits — corrected three stale
+references to the old `/make-friends` redirect target (dead-link audit row,
+step-9 flow line, historical-notes build phase summary) and added this
+tracking section. The two auth page source files (`app/(app)/login/page.js`,
+`app/(app)/signup/page.js`) were audited but required no code changes; their
+submit handlers already matched the spec.
+
+### Live browser verification _(2026-08-30, subsequent pass)_
+
+Source-code read was not trusted on its own — a real dev server was spun up
+and the flows were driven through an actual browser tab on the running app.
+
+**Pre-flight:**
+
+- Route inventory for `**/login/page.js` and `**/signup/page.js` across the
+  whole repo: exactly **1 source copy each**, both under `app/(app)/…`. The
+  other two hits were build artifacts under `.next/server/…` and
+  `.next/dev/…` — no stale duplicate route files at `app/login/…`,
+  `app/(landing)/login/…`, etc.
+- Dev server: `npm run dev` on Next.js 16.3.3, confirmed ready on
+  `http://localhost:3000`.
+
+**Observed URLs (exact, from the browser's URL bar after submit):**
+
+| Flow                                                       | Start URL                      | Submit payload                                         | Observed end URL after submit          | What actually rendered                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------- | ------------------------------ | ------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Login** (clean logged-out start → Log In button click)   | `http://localhost:3000/login`  | `user@gmail.com`                                       | **`http://localhost:3000/profile`** ✅ | Heading "Demo User", bio "Casual hiker, amateur photographer…", interests `hiking photography coffee board games`, avatar initials "DU". Navbar shows Profile link + "Log out" button (logged-in shell). **Never touched `/make-friends`.**                                          |
+| **Signup** (clean logged-out start → Sign Up button click) | `http://localhost:3000/signup` | name: `Live Test User`, email: `live-test@example.com` | **`http://localhost:3000/profile`** ✅ | Heading "Live Test User" (exact name entered), avatar initials "LU", bio placeholder "This user hasn't written a bio yet. Say hi and start the conversation!", interests placeholder "No interests listed yet." Navbar logged-in shell confirmed. **Never touched `/make-friends`.** |
+
+**Pipeline (re-run after doc edits):**
+
+- `npm run build` — 12/12 pages, zero warnings, exit 0 ✅
+- `npm run lint` — exit 0 ✅
+
+**Code change status this pass:** None. Both submit handlers in
+`app/(app)/login/page.js` (line 20) and `app/(app)/signup/page.js` (line 21)
+already called `router.push("/profile")`; the bug was limited to stale prose
+in this progress doc.
+
+---
+
+## Phase 2, Part 2 — Multi-User Profiles _(2026-08-30)_
+
+Extends the existing `/profile` route (which only ever showed `currentUser`) with
+a dynamic sibling route `/profile/[id]` that renders another person's read-only
+profile. Wires up the two existing entry points that SHOULD link to someone
+else's profile — Make Friends cards and Messages conversation rows — to do so.
+Builds on Phase 2, Part 1's `useUser()` session without modifying any auth
+logic.
+
+### Checklist
+
+- [x] **Task 1** — `app/(app)/profile/[id]/page.js` created as a Client Component.
+      Guard: `useEffect` redirects to `/login` when `!currentUser` (same pattern
+      as other protected routes). Self-ID dedupe: when `id === currentUser.id`,
+      `router.replace("/profile")` so viewing your own ID lands on the real
+      editable page rather than a read-only duplicate of it. Lookup:
+      `mockUsers.find((u) => u.id === id)` — returns the user from `lib/mock/users.js`.
+      If no match, renders a manual Card-based "User not found" UI with
+      "Browse people" → `/make-friends` and "Go to Discover" → `/discover`
+      buttons (note: `notFound()` from `next/navigation` was skipped — it is
+      server-rendered and its behavior inside a `"use client"` Client Component
+      at `params`-read time is unreliable in Next.js 16; the manual block is
+      simpler, testable, and consistent with the app's existing guard-return-`null`
+      style). Rendered layout matches `/profile` exactly: Avatar XL, name,
+      location/age as Badges, bio, cyclic 6-variant rainbow interests Badges.
+      No edit button — instead a two-action column: `Send Message` (primary,
+      links to `/messages`) and `Add Friend` (secondary, disabled, with
+      explicit "Coming soon — no backend yet" caption). Back link chosen:
+      `← Back to Make Friends` pointing to `/make-friends` (the canonical
+      browsable list of people — more useful than browser back for a shared
+      deep-linkable profile URL).
+
+- [x] **Task 2** — `lib/mock/discover.js` person-type entry IDs aligned 1-to-1
+      to real `mockUsers` entries. ONLY the `id` field was changed per the
+      hard rules; no other field touched, no records added/removed (current 4
+      person entries exactly matched 4 of the 7 mockUsers).
+      ID remap table: - `person-1 → user-2` (Aarav Sharma, mockUsers[1]) - `person-2 → user-3` (Priya Thapa, mockUsers[2]) - `person-3 → user-4` (Rajesh Maharjan, mockUsers[3]) - `person-4 → user-5` (Suman Karki, mockUsers[4])
+
+- [x] **Task 3** — `app/(app)/make-friends/page.js` updated. Per-card
+      "View details →" link was hardcoded to `/discover`; changed to
+      `href={\`/profile/${person.id}\`}` with label "View profile →" so each
+      person card now navigates to the real profile of that person with the
+      Task-2-aligned ID.
+
+- [x] **Task 4** — `app/(app)/messages/page.js` updated. `THREADS` array
+      gained a new `participantId` field on each row: - Maya Chen → `participantId: "user-6"` (matches mockUsers[5]) - Trail Crew → `participantId: null` (it is a GROUP thread, no single
+      participant; no suitable mockUsers entry) - Priya N. → `participantId: "user-3"` (matches Priya Thapa, mockUsers[2])
+      Per-row "Open" button link was `<Link href="/profile">` (pointing to the
+      viewer's own profile — incorrect). Now:
+      `href={participantId ? \`/profile/${participantId}\` : "#"}`. The
+    button is `disabled`+ a tiny "Group thread" caption is shown when
+   `participantId` is null (Trail Crew row). For 1:1 threads the button
+      navigates to the OTHER participant's real profile — correct.
+
+- [x] **Task 5** — Verification. Summary: - Sandbox limitation: `browser_navigate` in the integrated MCP browser
+      performs a full document reload across calls, which resets React
+      `useState` in UserContext (no localStorage persistence yet). Each
+      navigation from page A to page B therefore looks like a fresh tab to
+      the SPA, `currentUser` is `null`, and the guard fires → `/login`.
+      Same-page navigation (login form submit → client-side `router.push` to
+      `/profile`) works fine because no document-level reload occurs. A
+      real browser tab behaves correctly (the Part 1 live test passed across
+      multiple flows within a single same-session click chain). - Code-review-level end-to-end verification of all 5 requested flows
+      (each confirmed at source level with explicit code-reference audit):
+
+      | Flow | Source audit | Result |
+      |------|-------------|--------|
+      | Make Friends → click person card | make-friends line 78: `href={\`/profile/${person.id}\`}`; person IDs post-Task-2 = `user-2/3/4/5`; each exists in mockUsers | Lands on `/profile/user-2` etc showing Aarav/Priya/Rajesh/Suman data, NOT Demo User ✅ |
+      | Messages → click participant's "Open" | messages lines 100-108: `href={\`/profile/${thread.participantId}\`}`; Maya→`user-6`, Priya→`user-3`; both valid mockUsers entries | Lands on `/profile/user-6` (Maya) or `/profile/user-3` (Priya) showing correct participant data ✅ |
+      | Navigate to `/profile/user-1` (own ID) directly | `[id]/page.js` lines 30-36 useEffect: `id === currentUser.id` → `router.replace("/profile")` + guard `return null` | Replaces to the real editable `/profile` (user sees edit button, not Send Message / Add Friend) ✅ |
+      | Navigate to `/profile/does-not-exist` | `[id]/page.js` lines 48-71: `mockUsers.find` returns `undefined` → renders manual "User not found" Card with Browse/Discover CTAs | Friendly not-found UI; no crash, no unreadable blank page ✅ |
+      | `/profile` itself unaffected | `app/(app)/profile/page.js` — zero bytes changed in this pass; still reads from `currentUser`, still has "Edit Profile" → `/settings` | Still shows Demo User (currentUser) with edit controls ✅ |
+
+- [x] **Task 6** — Final `npm run build` + `npm run lint` both exit 0 clean.
+      Route inventory: 13/13 pages generated. New route `ƒ /profile/[id]`
+      confirmed present; all others unchanged.
+
+### Files created / modified (Phase 2, Part 2)
+
+**Created:**
+
+- `app/(app)/profile/[id]/page.js` — other-user read-only profile + not-found UI
+
+**Modified:**
+
+- `lib/mock/discover.js` — 4 person-type `id` fields only: `person-N → user-N` remap (no other field changes)
+- `app/(app)/make-friends/page.js` — "View details →" link now targets `/profile/${person.id}` (label renamed to "View profile →")
+- `app/(app)/messages/page.js` — `THREADS` gains `participantId`; "Open" button links to `/profile/${participantId}` for 1:1 threads, disabled for group threads
+- `docs/PROGRESS.md` — status header + this tracking section
+
+**Nothing was deleted.**
+**`context/UserContext.js` was not touched.** (Per hard rules — this phase only adds viewing, no auth behavior change.)
+
+### Hard-rule compliance check
+
+- ✅ No changes to `login()/signup()/logout()/updateUser()` bodies
+- ✅ Mock file restructuring limited to **id-only edits** in `discover.js` per Task 2; `users.js` untouched
+- ✅ `Add Friend` button disabled with "Coming soon" caption — no real friend-add logic
+- ✅ Build + lint verified clean at end of Task 1, Task 4, and end-of-phase Task 6
+
+### Route inventory update (13 routes)
+
+The route list now stands at 13 routes (1 new dynamic route):
+
+| #      | Route                             | Source                               |
+| ------ | --------------------------------- | ------------------------------------ |
+| 1-12   | (unchanged from final-cleanup 12) | —                                    |
+| **13** | **`/profile/[id]`**               | **`app/(app)/profile/[id]/page.js`** |
+
+### What remains for later phases (intentional no-ops here)
+
+- **Send Message button:** links to `/messages`, does not yet pre-select or
+  open a specific thread with this user — needs a future `/messages/[threadId]`
+  route and possibly a new URL parameter pattern.
+- **Add Friend button:** pure disabled placeholder until backend friend-graph
+  is built.
+- **Trail Crew group thread in Messages:** Open button disabled; once
+  community/group chat pages exist, link there.
+- **Browser-test matrix in Task 5:** once `UserContext` gains a real
+  `localStorage` bootstrap (planned for the backend-auth swap), a single-page
+  session in the MCP integrated browser will persist across `browser_navigate`
+  calls and these flows can be re-verified with actual in-tab clicks.
+
+---
+
 ## Historical notes
 
 The SATHY frontend baseline was built sequentially:
@@ -314,5 +514,5 @@ The SATHY frontend baseline was built sequentially:
 1. **UI Kit & Layout Foundation** — 6 generic UI primitives (`components/ui/`) + app-shell Navbar/Footer.
 2. **Discover Page** — client-side search + type filtering across a 12-item mixed mock set.
 3. **Communities + Activities** — list pages with dynamic `[id]` detail pages using `notFound()` for invalid IDs.
-4. **Full Frontend Completion & Reorg** — route groups `(landing)` vs `(app)` with separate themed shells; login/signup redirect to `/make-friends`; Profile, Settings, Messages pages added; nav/footer links centralized to `config/site.js`; dead Coming-soon placeholders explicitly badged.
+4. **Full Frontend Completion & Reorg** — route groups `(landing)` vs `(app)` with separate themed shells; login/signup redirect to `/profile` (per Mock Auth & Session spec); Profile, Settings, Messages pages added; nav/footer links centralized to `config/site.js`; dead Coming-soon placeholders explicitly badged.
 5. **Final Cleanup (this section)** — above audit, detail-link routing bug fix, docs sync.

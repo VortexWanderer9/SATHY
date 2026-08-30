@@ -75,10 +75,10 @@ export default function MakeFriendsPage() {
 
             <div className="mt-auto flex justify-end pt-2">
               <Link
-                href="/discover"
+                href={`/profile/${person.id}`}
                 className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
               >
-                View details →
+                View profile →
               </Link>
             </div>
           </Card>

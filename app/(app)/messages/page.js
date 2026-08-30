@@ -16,6 +16,7 @@ const THREADS = [
     preview: "Still up for the sunrise hike this weekend?",
     time: "2m ago",
     unread: 2,
+    participantId: "user-6",
   },
   {
     id: 2,
@@ -23,6 +24,7 @@ const THREADS = [
     preview: "Made the route list for next Friday’s meetup.",
     time: "1h ago",
     unread: 0,
+    participantId: null,
   },
   {
     id: 3,
@@ -30,6 +32,7 @@ const THREADS = [
     preview: "I can send you a few spots for pottery classes.",
     time: "Yesterday",
     unread: 0,
+    participantId: "user-3",
   },
 ];
 
@@ -94,9 +97,26 @@ export default function MessagesPage() {
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-xs text-gray-500">{thread.time}</p>
-                <Button asChild variant="ghost" size="sm" className="mt-2">
-                  <Link href="/profile">Open</Link>
+                <Button
+                  asChild
+                  variant={thread.participantId ? "ghost" : "ghost"}
+                  size="sm"
+                  className="mt-2"
+                  disabled={!thread.participantId}
+                >
+                  <Link
+                    href={
+                      thread.participantId
+                        ? `/profile/${thread.participantId}`
+                        : "#"
+                    }
+                  >
+                    Open
+                  </Link>
                 </Button>
+                {!thread.participantId && (
+                  <p className="mt-1 text-[10px] text-gray-400">Group thread</p>
+                )}
               </div>
             </div>
           ))}
