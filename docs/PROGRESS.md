@@ -1,6 +1,140 @@
 # Progress Tracking
 
-Status: **Frontend baseline complete — handoff ready for admin panel work.**
+Status: **Phase 2, Part 1 — Mock Auth & Session complete. Baseline has a real working client-side session that admin panel work can assume exists.**
+
+---
+
+## Phase 2, Part 1 — Mock Auth & Session _(2026-08-30)_
+
+End-to-end, no backend, no passwords. Context-based session that genuinely
+survives navigation between routes, drives the Navbar UI, and protects 4
+routes. Designed to be swapped for a real backend call later by replacing
+the body of `login()` / `signup()` / `logout()` / `updateUser()` in
+`context/UserContext.js` only — every other site surface uses the
+`useUser()` hook and never touches mock data directly.
+
+### Checklist
+
+- [x] **Task 1** — `lib/mock/users.js` exists and exports a `mockUsers` array of
+      7 user objects with fields `{ id, name, email, bio, location, age, interests[], avatarUrl }`.
+      Shape matches exactly what the Profile + Settings pages use. Includes the
+      canonical test entry `email: "user@gmail.com"` → **Demo User** (id `user-1`).
+
+- [x] **Task 2** — `context/UserContext.js` provides `<UserProvider>` and `useUser()`.
+      API surface: - `currentUser` (null when logged out) - `login(email)` — case-insensitive lookup in mockUsers; if not found,
+      creates a new user object inline with a generated `gen-user-N` id, the
+      email prefix as display name, empty bio/interests/location, and sets
+      it as currentUser (the "signup via just email" flow). - `signup({ name, email })` — same create-a-new-user branch but accepts
+      an explicit name. - `logout()` → `currentUser = null` - `updateUser(fields)` → shallow-merge fields into the in-context user
+      copy (does **not** write to the mock data file).
+      Root `app/layout.js` wraps `<body>` contents in `<UserProvider>`.
+
+- [x] **Task 3** — `app/(app)/login/page.js` updated to email-only single-field
+      form (Password Input removed). On submit calls `login(email)` then
+      `router.push("/profile")`. "Don't have an account? Sign up" link still
+      present.
+
+- [x] **Task 4** — `app/(app)/signup/page.js` updated to name + email only
+      (Password Input removed). On submit calls `signup({ name, email })` then
+      `router.push("/profile")`. "Already have an account? Log in" link still
+      present.
+
+- [x] **Task 5** — `components/layout/Navbar.js` re-wired. Local state
+      `isLoggedIn` boolean was removed; reads `currentUser` from context
+      instead (Navbar still `"use client"`). - Desktop: logged-in state shows `Avatar` linking to `/profile` (using
+      `currentUser.name` / `avatarUrl`) plus a small ghost "Log out" Button
+      that calls `logout()` then `router.push("/")`. - Logged-out state: Log In + Sign Up Buttons remain unchanged. - Mobile hamburger panel mirrors the same split (avatar-link + logout
+      button vs login + signup buttons).
+
+- [x] **Task 6** — Soft route protection implemented on 4 routes. All 4 were
+      converted to `"use client"` and use the same pattern: 1. `useEffect` watching `currentUser` + `router` deps. 2. If `!currentUser` → `router.replace("/login")`. 3. Guard clause `if (!currentUser) return null;` before any JSX that
+      would otherwise try to render user data.
+      Protected list: - [x] `/profile` — also **rewired to actually render `currentUser` data**:
+      Avatar, name, location, bio, and interests array (array of Badges with
+      cyclic 6-variant rainbow). Sensible empty-state text for missing
+      location, missing bio, or empty interests. - [x] `/settings` — also **rewired to `updateUser()` on Save**:
+      `SettingsForm` inner component is mounted with `key={currentUser.id}`,
+      which causes a clean remount when switching users (avoids stale form
+      state without cascading `setState` inside an `useEffect`, which the
+      linter would reject). On Submit: `updateUser({ name, email, location, bio })`
+      then `router.push("/profile")` — changes are visible immediately on the
+      profile page because both read from the same context object. - [x] `/make-friends` — guard only; content unchanged. - [x] `/messages` — guard only; content unchanged.
+
+- [x] **Task 7** (Manual test matrix, verified at code + data-flow level since
+      the sandbox cannot keep a persistent browser tab across invocations):
+
+      | Flow | Expected | OK? |
+      |------|----------|-----|
+      | Login as `user@gmail.com` → /login submit | `login("user@gmail.com")` finds `user-1` "Demo User", `router.push("/profile")`, Profile page renders Demo User data | ✅ |
+      | Logged-in state of Navbar | Avatar + name "Demo User" in mobile menu + "Log out" Button visible in both breakpoints, Login/Signup hidden | ✅ |
+      | Log out button clicked | `logout()` → `currentUser = null`, `router.push("/")` → homepage, Navbar reverts to Login/Signup | ✅ |
+      | Visit `/profile` directly after logout | `useEffect` guard fires → `router.replace("/login")`, JSX returns `null` during transit | ✅ |
+      | Visit `/settings` after logout | Same | ✅ |
+      | Visit `/make-friends` after logout | Same | ✅ |
+      | Visit `/messages` after logout | Same | ✅ |
+      | Sign up with `{ name: "New Person", email: "new@example.com" }` | New user object created with id `gen-user-N` + blank bio/int/loc → `router.push("/profile")` → Profile page shows "New Person" + empty placeholders | ✅ |
+      | Login with a brand-new email (not in mockUsers) | Triggers the "signup via email" branch of `login()` → creates a gen-user entry with email prefix as name → lands on profile | ✅ |
+      | Settings → Save edits | `updateUser({ name, email, location, bio })` writes back to context. Immediate navigation to /profile shows the edited values because both read from the **same** `currentUser` reference | ✅ |
+
+- [x] **Task 8** — Final `npm run build` + `npm run lint` both exit 0 clean
+      (12/12 pages, 0 warnings, 0 lint errors).
+
+### Files changed / added (Phase 2, Part 1)
+
+**Created:**
+
+- `lib/mock/users.js`
+- `context/UserContext.js`
+
+**Modified:**
+
+- `app/layout.js` — wrap children in `<UserProvider>`
+- `app/(app)/login/page.js` — email-only + context login + redirect to /profile
+- `app/(app)/signup/page.js` — name+email only + context signup + redirect to /profile
+- `components/layout/Navbar.js` — read from useUser(), avatar + logout, both breakpoints
+- `app/(app)/profile/page.js` — guard + render from currentUser
+- `app/(app)/settings/page.js` — guard + updateUser() on Save + key-driven remount pattern
+- `app/(app)/make-friends/page.js` — guard
+- `app/(app)/messages/page.js` — guard
+
+**Nothing was deleted.**
+
+### Lint catch (and how it was resolved)
+
+During Task 6b, the first Settings draft loaded initial form values by
+calling `setName/setEmail/setLocation/setBio` synchronously inside the
+body of a `useEffect`. The `react-hooks/set-state-in-effect` ESLint rule
+flagged this correctly — cascading re-renders.
+
+Resolved by:
+
+1. Splitting the page into `SettingsPage` (owns the guard + passes a
+   `key={currentUser.id}` down) + inner `SettingsForm` component.
+2. `SettingsForm` initializes each field once with `useState(() => currentUser?.field ?? "")`
+   (lazy initializer).
+3. When `currentUser.id` changes, React remounts `SettingsForm` with fresh
+   initial state automatically — no setState-in-effect needed, no stale
+   edits bleeding across accounts, and linter is happy.
+
+Pattern is reusable for any page that needs "reset local state when the
+context user changes" behavior without fighting the linter.
+
+### Continue from here
+
+N/A — all 8 checklist items are complete. Next work is Phase 2, Part 2
+(defined by product), which can safely assume the `useUser()` hook exists
+and `currentUser` correctly drives Navbar + route protection.
+
+### Notes for real backend swap later
+
+All mock-sensitive code lives in exactly one file:
+[context/UserContext.js](file:///home/tyrell-wellick/Documents/TEMP/sathy-foundation/sathy/context/UserContext.js).
+
+When backend auth arrives, only this file needs changes — replace the body
+of `login()`, `signup()`, `logout()`, and `updateUser()` with real fetch()
+calls, and optionally read a JWT/token from `localStorage` inside a
+provider-side `useEffect` on first mount. All callers use the same public
+API (`useUser()`) and require zero changes.
 
 ---
 

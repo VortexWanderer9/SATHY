@@ -1,8 +1,13 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import { useUser } from "@/context/UserContext";
 
 const THREADS = [
   {
@@ -29,6 +34,19 @@ const THREADS = [
 ];
 
 export default function MessagesPage() {
+  const router = useRouter();
+  const { currentUser } = useUser();
+
+  useEffect(() => {
+    if (!currentUser) {
+      router.replace("/login");
+    }
+  }, [currentUser, router]);
+
+  if (!currentUser) {
+    return null;
+  }
+
   return (
     <Container className="py-12">
       <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

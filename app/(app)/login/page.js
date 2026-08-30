@@ -7,15 +7,17 @@ import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { useUser } from "@/context/UserContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useUser();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    router.push("/make-friends");
+    login(email);
+    router.push("/profile");
   };
 
   return (
@@ -30,25 +32,22 @@ export default function LoginPage() {
 
         <Card>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <Button type="submit" variant="primary" size="lg" className="w-full">
-            Log In
-          </Button>
+            <Input
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full"
+            >
+              Log In
+            </Button>
           </form>
         </Card>
 

@@ -1,9 +1,14 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Avatar from "@/components/ui/Avatar";
 import { discoverItems } from "@/lib/mock/discover";
+import { useUser } from "@/context/UserContext";
 
 const TAG_VARIANTS = ["info", "purple", "pink", "success", "warning", "danger"];
 
@@ -14,13 +19,26 @@ function pickTagVariant(index) {
 const people = discoverItems.filter((i) => i.type === "person");
 
 export default function MakeFriendsPage() {
+  const router = useRouter();
+  const { currentUser } = useUser();
+
+  useEffect(() => {
+    if (!currentUser) {
+      router.replace("/login");
+    }
+  }, [currentUser, router]);
+
+  if (!currentUser) {
+    return null;
+  }
+
   return (
     <Container className="py-12">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Make Friends</h1>
         <p className="mt-2 text-gray-600">
-          People nearby who share your interests — click through to say hi and plan a real
-          hangout.
+          People nearby who share your interests — click through to say hi and
+          plan a real hangout.
         </p>
       </header>
 
@@ -29,10 +47,7 @@ export default function MakeFriendsPage() {
         aria-label="People"
       >
         {people.map((person) => (
-          <Card
-            key={person.id}
-            className="flex h-full flex-col gap-4"
-          >
+          <Card key={person.id} className="flex h-full flex-col gap-4">
             <div className="flex items-start gap-4">
               <Avatar
                 src={person.avatarUrl || undefined}
@@ -60,7 +75,7 @@ export default function MakeFriendsPage() {
 
             <div className="mt-auto flex justify-end pt-2">
               <Link
-                href={`/discover`}
+                href="/discover"
                 className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
               >
                 View details →

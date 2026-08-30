@@ -1,15 +1,24 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import Avatar from "@/components/ui/Avatar";
+import { useUser } from "@/context/UserContext";
 
 export default function Navbar() {
+  const router = useRouter();
+  const { currentUser, logout } = useUser();
   const [open, setOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    router.push("/");
+  };
 
   return (
     <header className="border-b border-gray-200">
@@ -37,14 +46,25 @@ export default function Navbar() {
           </ul>
 
           <div className="hidden items-center gap-3 md:flex">
-            {isLoggedIn ? (
-              <Link href="/profile" aria-label="Profile">
-                <Avatar
-                  name="Sathy User"
+            {currentUser ? (
+              <>
+                <Link href="/profile" aria-label="Profile">
+                  <Avatar
+                    src={currentUser.avatarUrl || undefined}
+                    name={currentUser.name}
+                    size="sm"
+                    className="cursor-pointer"
+                  />
+                </Link>
+                <Button
+                  variant="ghost"
                   size="sm"
-                  className="cursor-pointer"
-                />
-              </Link>
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Log out
+                </Button>
+              </>
             ) : (
               <>
                 <Button asChild variant="outline" size="md">
@@ -108,15 +128,29 @@ export default function Navbar() {
               ))}
             </ul>
             <div className="mt-4 flex flex-col gap-3">
-              {isLoggedIn ? (
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                  onClick={() => setOpen(false)}
-                >
-                  <Avatar name="Sathy User" size="sm" />
-                  <span>Profile</span>
-                </Link>
+              {currentUser ? (
+                <>
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    onClick={() => setOpen(false)}
+                  >
+                    <Avatar
+                      src={currentUser.avatarUrl || undefined}
+                      name={currentUser.name}
+                      size="sm"
+                    />
+                    <span>{currentUser.name}</span>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={handleLogout}
+                    className="justify-start text-gray-600 hover:text-gray-900"
+                  >
+                    Log out
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button

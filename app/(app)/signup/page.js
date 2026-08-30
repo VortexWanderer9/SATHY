@@ -7,16 +7,18 @@ import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { useUser } from "@/context/UserContext";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { signup } = useUser();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    router.push("/make-friends");
+    signup({ name, email });
+    router.push("/profile");
   };
 
   return (
@@ -31,33 +33,30 @@ export default function SignupPage() {
 
         <Card>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <Input
-            label="Full name"
-            type="text"
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Create a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <Button type="submit" variant="primary" size="lg" className="w-full">
-            Sign Up
-          </Button>
+            <Input
+              label="Full name"
+              type="text"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <Input
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full"
+            >
+              Sign Up
+            </Button>
           </form>
         </Card>
 
