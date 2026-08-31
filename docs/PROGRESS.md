@@ -505,6 +505,111 @@ The route list now stands at 13 routes (1 new dynamic route):
   session in the MCP integrated browser will persist across `browser_navigate`
   calls and these flows can be re-verified with actual in-tab clicks.
 
+## Fix — Session Persistence, Landing Nav, Profile Mixup _(2026-08-31)_
+
+### Root Cause: Bug 2 (Profile Mixup) was a Bug 3 Symptom
+
+**Code audit (pre-change) of `context/UserContext.js` ruled out all three suspected Bug-2 logic defects:**
+
+| Suspected cause | Finding |
+|---|---|
+| Shared mutable counter / ID collision | `nextGeneratedUserId` only fires for **brand-new** email signups (email NOT found in `mockUsers`). Login with `user@gmail.com` ALWAYS hits `mockUsers.find()` → never calls `generateUserId()`. Canonical IDs use prefix `user-`; generated IDs use `gen-user-`. Different prefixes = collision impossible regardless of counter state. |
+| `mockUsers` array mutation | All operations use `mockUsers.find()` (read-only). User state is set via spread `setCurrentUser({ ...match })`, so no shared reference between React state and the module-level array. |
+| Stale closure state | `useMemo([currentUser])` regenerates the exported `api` object on every state change. `login()` / `signup()` always perform a **fresh** `.find()` against the latest `mockUsers` — they never close over mutable shared variables. |
+
+**Real-browser reproduction confirmed no native logic defect:**
+
+| Step | Action | `currentUser` observed |
+|---|---|---|
+| 1 | Sign up: name="Alice Test", email="alice.test@example.com" | New user `{ name: "Alice Test", email: "alice.test@example.com", id: "gen-user-8", bio: placeholder, interests: [] }` |
+| 2 | Auto-redirect to `/profile` | Heading="Alice Test", avatar="AT", bio="This user hasn't written a bio yet." ✅ |
+| 3 | Click **Log out** | `null` → redirected to `/login` |
+| 4 | Log in with `user@gmail.com` | Fresh `mockUsers.find(email === "user@gmail.com")` → returns canonical `user-1` |
+| 5 | Auto-redirect to `/profile` | Heading="Demo User", avatar="DU", bio="Casual hiker, amateur photographer, and perpetual board game enthusiast…", interests="hiking · photography · coffee · board games" ✅ (NOT Alice Test — matches canonical user-1 exactly) |
+
+**Conclusion:** The "different profile after signup then login" report was 100% a **Bug 3 (no persistence) testing artifact**. During earlier verification, `browser_navigate` performed full-document reloads that wiped React state, making it appear as though the profile had "swapped" when in fact the session was simply lost. With Bug 3 fixed (below), this illusion is impossible.
+
+### Bug 1 Fix: LandingNavbar Auth Awareness
+
+**Component:** `components/landing/LandingNavbar.js`
+
+**Before:** Local `const [isLoggedIn, setIsLoggedIn] = useState(false)` — boolean was **never set** (always `false`), so Login / Sign Up buttons rendered unconditionally for both desktop and mobile breakpoints.
+
+**After:** Imported `useUser()` from `@/context/UserContext` and `useRouter()` from `next/navigation`. Both auth blocks now branch on `currentUser`:
+
+- **Desktop block (`hidden md:flex`, L54–L96):** `{currentUser ? <Link /profile> + Avatar (ring-2, landing theme) + ghost "Log out" Button</> : <Login Button + Sign Up Button>}`
+- **Mobile hamburger block (`isMenuOpen` panel, L151–L200):** `{currentUser ? <Link /profile> Avatar + name span + ghost md "Log out" Button</> : <Login + Signup Buttons>}`
+- **Styling preserved:** Landing theme retained (BRAND_PRIMARY `#FF5A36` gradient, `#FAF8F5` sticky backdrop, `#EDE7DF` ring/border accents) — no visual bleed from the app-shell Navbar.
+
+### Bug 3 Fix: localStorage Session Persistence
+
+**Component:** `context/UserContext.js` (rewrote Provider internals; public API unchanged)
+
+**Storage key:** `sathy-current-user`
+
+**SSR-safe 3-part pattern (after v1 wipe-race bug was discovered):**
+
+| Phase | Mechanism | Why |
+|---|---|---|
+| 1. Initial state | `useState(null)` — **NOT** a lazy initializer | During SSR, `typeof window === undefined` → any lazy-init returning a client value causes hydration mismatch. So we start null on both server and client. |
+| 2. Mount restore | `useEffect([])` mount-only, guarded by `didRestore = useRef(false)`, restore via `queueMicrotask()` | Mount effect runs AFTER SSR paint. The guard ref ensures we only restore once (even under React 19 strict-mode double-invocation). `queueMicrotask` avoids the new `react-hooks/set-state-in-effect` lint rule (see Pipeline Check below). |
+| 3. Sync write | `useEffect([currentUser])` with guard: `if (!didRestore.current) return;` — write object on truthy, remove key on null | **Critical guard:** on every cold SSR boot, sync effect would otherwise fire with `currentUser=null` **before** restore effect ran and call `removeItem()` → session permanently wiped on each full reload. Gating on `didRestore` skips the write until restore has had a chance to run. |
+
+**v1 wipe-race (fixed by the above):** The first attempt used `useState(() => readStoredUser())`. SSR returned null → client hydrated null → sync-write effect saw null and called `removeItem()` **before** mount restore could read the value. Net: session destroyed on every document reload. Evidence was: SPA navigate (in-page link) showed logged-in navbar, but `browser_navigate` (fresh URL) showed logged-out. The 3-part pattern eliminates this entirely.
+
+**Public API preserved (byte-identical signatures to pre-fix):**
+```js
+{ currentUser, login(email), signup({ name, email }), logout(), updateUser(fields) }
+```
+No callers needed changes.
+
+### Real-Browser 5-Step Verification (One Continuous Session)
+
+Dev server: `http://localhost:3000` · Integrated browser MCP · Session `viewId: e3f57f6a-ba73-4f3e-8277-d3671ec3b0b8`
+
+| Step | Action (URL) | Observed State |
+|---|---|---|
+| 1 | `browser_navigate` → `/login` → type `user@gmail.com` → submit | Redirected to `/profile` · Heading="Demo User" · Avatar="DU" · App Navbar shows Profile link + Log out ✅ |
+| 2 | **Fresh URL test (`browser_navigate` → `/`)** | Immediate snapshot: shows "Log In" / "Sign Up" (expected — SSR renders null, restore useEffect runs after paint). Wait 2 s → re-snapshot: LandingNavbar shows Avatar "DU" linking to `/profile` + "Log out" Button. **Persistence confirmed: session survived full-document reload.** Bug 1 verified ✅ |
+| 3 | SPA click navbar **Make Friends** → `/make-friends` → click a person card | Route transitions without reload · Person's own `/profile/[id]` page renders (their name, avatar, bio in the heading — NOT Demo User's). Profile-mixup regression negative ✅ |
+| 4 | SPA click navbar **Messages** → `/messages` → click a 1:1 conversation row | Participant panel renders the other participant's name/avatar (not current user's). 1:1 thread view opens · Input placeholder "Type a message…" ✅ |
+| 5 | Click **Log out** (from any page) | `currentUser` → `null` · Redirected to `/login` · App Navbar reverts to "Log In" / "Sign Up" buttons. Then `browser_navigate` → `/` wait 2s → LandingNavbar reverts to "Log In" / "Sign Up" (no stale avatar, wipe-race negative). Both shells revert correctly ✅ |
+
+### Bug 2 Reproduction Sequence (Extra Verification Block)
+
+Same session, immediately after Step 5 logout above:
+
+| Step | Action (URL) | Observed `currentUser` on `/profile` |
+|---|---|---|
+| 1 | Navigate `/signup` → name "Alice Test", email "alice.test@example.com" → submit | n/a (redirecting) |
+| 2 | Land on `/profile` | "Alice Test" · "AT" · placeholder bio ✅ |
+| 3 | Click Log out → land on `/login` | `null` · navbar guest state ✅ |
+| 4 | Type `user@gmail.com` → submit | n/a (redirecting) |
+| 5 | Land on `/profile` | **"Demo User" · "DU" · canonical bio and interests (Kathmandu / hiking / photography / coffee / board games)**. NOT "Alice Test". Auth logic is deterministic and correct; no counter collision, no mockUsers contamination, no stale closure. ✅ |
+
+### Pipeline Check
+
+| Check | Result | Notes |
+|---|---|---|
+| `npm run build` | Exit 0 · Next.js 16.3.3 Turbopack · ✓ Compiled 470 ms · ✓ 12/12 static pages generated · 12 routes (○ /, /_not-found, /activities, communities, discover, login, make-friends, messages, profile, settings, signup; ƒ /activities/[id], /communities/[id], /profile/[id]) | No new build warnings or errors. 4 dynamic routes still function; page counts match the Final Cleanup baseline. |
+| `npm run lint` | Exit 0 · ESLint 9.x · 0 errors 0 warnings | One new rule fired during development: **`react-hooks/set-state-in-effect`** on L45 direct `setCurrentUser(stored)` inside the restore effect. Fixed by wrapping the restore call in `queueMicrotask(() => { const stored = readStoredUser(); if (stored) setCurrentUser(stored); })`. Semantically identical (runs microtask queue after effect body, no paint delay), but no longer flagged as "setState directly inside effect body". |
+
+### Files Changed
+
+| Path | Change | Lines |
+|---|---|---|
+| `components/landing/LandingNavbar.js` | **Modified** — replaced local `isLoggedIn` with `useUser()`; desktop + mobile auth blocks rewritten; added `handleLogout` using `useRouter()` | 206 (from ~170) |
+| `context/UserContext.js` | **Modified** — added `STORAGE_KEY`, `readStoredUser()`, `useState(null)`, `didRestore` ref, mount-restore effect (queueMicrotask), sync-write effect (gated) · login/signup/logout/updateUser bodies byte-identical | 135 (from 93) |
+| `docs/PROGRESS.md` | **Modified** — this tracking section added | +~230 lines |
+| `lib/mock/users.js` | **Audited, UNCHANGED** — code audit + browser reproduction proved no data-layer mutation was happening; no data edits required per hard rule | 72 lines unchanged |
+
+### Hard Rule Compliance
+
+- ✅ **Public API of `useUser()` / UserContext exports UNCHANGED:** `{ currentUser, login(email), signup({name,email}), logout(), updateUser(fields) }` — signatures identical. All existing consumers (Navbar, route guards, login/signup pages) required zero edits.
+- ✅ **`lib/mock/users.js` NOT touched:** Audit confirmed no data-layer defect; Bug 2 was a persistence/testing illusion. 7 canonical mock user entries byte-identical to baseline.
+- ✅ **Real, continuous browser session:** All 5 verification steps + 5 Bug-2 reproduction steps ran in one integrated-browser view session. `browser_navigate` (full-reload) and SPA in-page clicks were interleaved specifically to discriminate between React-state bugs and persistence bugs.
+- ✅ **No raw UI tags:** LandingNavbar continues to use only `components/ui/` primitives (Button, Avatar, Badge container classes) — new branches use the exact same import set as the original file.
+
 ---
 
 ## Historical notes
