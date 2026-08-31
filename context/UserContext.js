@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { mockUsers } from "@/lib/mock/users";
 
 const UserContext = createContext(null);
+const STORAGE_KEY = "sathy-current-user";
 
 let nextGeneratedUserId = mockUsers.length + 1;
 function generateUserId() {
@@ -12,8 +13,37 @@ function generateUserId() {
   return id;
 }
 
+function readStoredUser() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !parsed.email) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export function UserProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => readStoredUser());
+
+  useEffect(() => {
+    if (currentUser) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+      } catch {
+        /* ignore quota / serialization errors */
+      }
+    } else {
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [currentUser]);
 
   const api = useMemo(
     () => ({

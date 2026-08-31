@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { siteConfig } from "@/config/site";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import Avatar from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/context/UserContext";
 
 const BRAND_PRIMARY =
   "bg-[#FF5A36] hover:bg-[#E64A28] text-white focus-visible:outline-[#FF5A36]";
@@ -14,8 +16,15 @@ const BRAND_BORDER =
   "border-[#EDE7DF] bg-white text-[#1B1F23] hover:bg-[#EDE7DF]/60 focus-visible:outline-[#EDE7DF]";
 
 export default function LandingNavbar() {
+  const router = useRouter();
+  const { currentUser, logout } = useUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
+    router.push("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#EDE7DF] bg-[#FAF8F5]/90 backdrop-blur">
@@ -43,14 +52,25 @@ export default function LandingNavbar() {
           </ul>
 
           <div className="hidden items-center gap-3 md:flex">
-            {isLoggedIn ? (
-              <Link href="/profile" aria-label="Profile">
-                <Avatar
-                  name="Sathy User"
+            {currentUser ? (
+              <>
+                <Link href="/profile" aria-label="Profile">
+                  <Avatar
+                    src={currentUser.avatarUrl || undefined}
+                    name={currentUser.name}
+                    size="sm"
+                    className="cursor-pointer ring-2 ring-[#EDE7DF]"
+                  />
+                </Link>
+                <Button
+                  variant="ghost"
                   size="sm"
-                  className="cursor-pointer ring-2 ring-[#EDE7DF]"
-                />
-              </Link>
+                  onClick={handleLogout}
+                  className="text-[#1B1F23]/70 hover:text-[#1B1F23] hover:bg-[#EDE7DF]/60"
+                >
+                  Log out
+                </Button>
+              </>
             ) : (
               <>
                 <Button
@@ -129,19 +149,30 @@ export default function LandingNavbar() {
               ))}
             </ul>
             <div className="mt-4 flex flex-col gap-3">
-              {isLoggedIn ? (
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#1B1F23]/80 hover:bg-[#EDE7DF]/60"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Avatar
-                    name="Sathy User"
-                    size="sm"
-                    className="ring-2 ring-[#EDE7DF]"
-                  />
-                  <span>Profile</span>
-                </Link>
+              {currentUser ? (
+                <>
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#1B1F23]/80 hover:bg-[#EDE7DF]/60"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Avatar
+                      src={currentUser.avatarUrl || undefined}
+                      name={currentUser.name}
+                      size="sm"
+                      className="ring-2 ring-[#EDE7DF]"
+                    />
+                    <span>{currentUser.name}</span>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={handleLogout}
+                    className="justify-start text-[#1B1F23]/70 hover:text-[#1B1F23] hover:bg-[#EDE7DF]/60"
+                  >
+                    Log out
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button
