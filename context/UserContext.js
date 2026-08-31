@@ -40,10 +40,12 @@ export function UserProvider({ children }) {
   useEffect(() => {
     if (didRestore.current) return;
     didRestore.current = true;
-    const stored = readStoredUser();
-    if (stored) {
-      setCurrentUser(stored);
-    }
+    queueMicrotask(() => {
+      const stored = readStoredUser();
+      if (stored) {
+        setCurrentUser(stored);
+      }
+    });
   }, []);
 
   useEffect(() => {
