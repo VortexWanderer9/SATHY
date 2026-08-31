@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { mockUsers } from "@/lib/mock/users";
 
 const UserContext = createContext(null);
@@ -27,9 +34,20 @@ function readStoredUser() {
 }
 
 export function UserProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(() => readStoredUser());
+  const [currentUser, setCurrentUser] = useState(null);
+  const didRestore = useRef(false);
 
   useEffect(() => {
+    if (didRestore.current) return;
+    didRestore.current = true;
+    const stored = readStoredUser();
+    if (stored) {
+      setCurrentUser(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!didRestore.current) return;
     if (currentUser) {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
@@ -73,7 +91,8 @@ export function UserProvider({ children }) {
 
       signup({ name, email }) {
         const normalizedEmail = (email || "").trim().toLowerCase();
-        const displayName = (name || "").trim() || normalizedEmail.split("@")[0] || "New User";
+        const displayName =
+          (name || "").trim() || normalizedEmail.split("@")[0] || "New User";
         const existing = mockUsers.find(
           (u) => u.email.toLowerCase() === normalizedEmail,
         );
@@ -99,17 +118,13 @@ export function UserProvider({ children }) {
       },
 
       updateUser(fields) {
-        setCurrentUser((prev) =>
-          prev ? { ...prev, ...fields } : prev,
-        );
+        setCurrentUser((prev) => (prev ? { ...prev, ...fields } : prev));
       },
     }),
     [currentUser],
   );
 
-  return (
-    <UserContext.Provider value={api}>{children}</UserContext.Provider>
-  );
+  return <UserContext.Provider value={api}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {
