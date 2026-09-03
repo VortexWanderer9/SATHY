@@ -22,7 +22,7 @@ const TONE_MAP = {
     rail: "from-rose-400/40",
     pill: "bg-rose-400/10 text-rose-300 border-rose-400/20",
   },
-};
+}
 
 function VerbBadge({ verb, tone }) {
   const t = TONE_MAP[tone] || TONE_MAP.info;
